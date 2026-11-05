@@ -1,0 +1,113 @@
+# Implementation Roadmap: AI-Driven Development Lifecycle (AIDLC)
+
+*Prepared for Engineering Management | Integrating Polarion, GitHub, Copilot, & Superpowers*
+
+## 1. Executive Summary
+
+This roadmap outlines the strategic transition from a traditional Software Development Lifecycle (SDLC) to an AI-Driven Lifecycle (AIDLC). By combining our existing toolchain (Siemens Polarion ALM and GitHub) with AI execution capabilities (GitHub Copilot and the Superpowers methodology via the Model Context Protocol), we can achieve autonomous traceability, test-driven AI development, and strict compliance governance. This document provides the comparative benefits and the step-by-step technical rollout plan.
+
+## 2. Business Value: Before vs. After AIDLC
+
+Implementing this architecture shifts our AI from a simple "code autocomplete" tool into an integrated systems engineer that respects enterprise workflows.
+
+| Capability Area | Current State (Traditional SDLC + Basic AI) | Future State (AIDLC with Superpowers & MCP) |
+| :--- | :--- | :--- |
+| **Requirements Context** | Developers manually read Polarion, switch tabs, and copy-paste context into Copilot. High risk of missing nuance. | Copilot directly queries Polarion Work Items via MCP, reading approved specifications and design constraints natively. |
+| **Code Quality** | AI generates code blindly. Developers must manually verify if it meets the original business requirement. | Superpowers forces a strict Test-Driven Development (TDD) loop. Code is only committed if it passes agent-authored tests. |
+| **Traceability & Compliance** | Manual linking of GitHub commits and Test Runs back to Polarion. Often delayed until audit time. | AI automatically appends Work Item IDs to Git commits and logs passing test results directly to Polarion Test Runs. |
+| **Governance** | Human developers can accidentally bypass approval gates or build against unapproved drafts. | The MCP agent is constrained by Polarion permissions and explicitly halted by Human-in-the-Loop (HITL) workflow gates. |
+
+## 3. Architecture & Toolchain Alignment
+
+*   **The Source of Truth:** Siemens Polarion ALM (Requirements, Test Runs, Traceability Matrix).
+*   **The Bridge:** Polarion MCP Server (Model Context Protocol). Allows the AI to read and write ALM data securely.
+*   **The Source Code:** GitHub (Version Control, Pull Requests, CI/CD).
+*   **The AI Executer:** GitHub Copilot (Integrated into IDEs or Workspaces), configured to consume MCP tools.
+*   **The Cognitive Framework:** Superpowers Methodology (Injected via System Prompts to force planning, TDD, and debugging loops).
+
+## 4. Architectural Flow & Interaction
+
+The following diagram and breakdown illustrate how the raw intelligence (Copilot), cognitive discipline (Superpowers), system connectors (MCP), and end-systems interact to process a single prompt from requirement to deployment.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Human as Human (PO / Dev)
+    participant AI as Copilot (LLM Brain)
+    participant SP as Superpowers (Cognitive OS)
+    participant MCP as Polarion MCP Server
+    participant POL as Polarion ALM (Source of Truth)
+    participant FS as Local Filesystem & Bash
+    participant GIT as GitHub (Version Control & CI/CD)
+
+    Note over Human, GIT: Phase 1: Requirements & Planning
+    Human->>AI: Prompt: "Implement Polarion Work Item REQ-849"
+    AI->>SP: Evaluates prompt against active skills
+    SP->>AI: Enforces Rule: Trigger 'brainstorming' & Read Requirement first
+    AI->>MCP: Call tool: get_work_item(id: "REQ-849")
+    MCP->>POL: REST API: Fetch specific Work Item data
+    POL-->>MCP: Returns JSON (BDD Criteria, Out of Scope boundaries)
+    MCP-->>AI: Feeds context into Copilot's context window
+    AI->>Human: Proposes Step-by-Step Implementation Plan
+    Note right of Human: The Mandatory Human-in-the-Loop Gate
+    Human-->>AI: "Approved, proceed."
+
+    Note over Human, GIT: Phase 2: Implementation (TDD Loop)
+    AI->>SP: Triggers 'test-driven-development' skill
+    SP->>AI: Enforces Loop: RED (Fail) -> GREEN (Pass) -> REFACTOR
+    AI->>FS: Executes bash commands to setup git branch
+    AI->>FS: Writes failing unit tests based on BDD Criteria
+    AI->>FS: Writes minimum implementation code to pass tests
+    FS-->>AI: Terminal outputs "Tests Passing (GREEN)"
+    AI->>GIT: Commits code with message "Implements REQ-849"
+    AI->>GIT: Pushes branch and opens Pull Request
+
+    Note over Human, GIT: Phase 3: Traceability & Deployment
+    AI->>MCP: Call tool: create_test_run(req_id: "REQ-849", status: "Passed")
+    MCP->>POL: REST API: Logs passing tests & creates traceability links
+    POL-->>MCP: Confirms compliance records updated
+    MCP-->>AI: Acknowledges successful logging
+    AI->>Human: "Code pushed to PR. Test Run logged in Polarion."
+    Note right of Human: Final Code Review & Merge
+    Human->>GIT: Reviews PR and clicks 'Merge'
+    GIT->>POL: Webhook triggers Polarion Baseline snapshot
+    GIT->>GIT: GitHub Actions CI/CD pipeline deploys to Production
+```
+
+### The Component Breakdown
+
+1.  **The Brain (Copilot/AI):** Receives the initial human command. It understands the code syntax and logic but requires external structure and enterprise data to act correctly.
+2.  **The Discipline (Superpowers):** Intercepts Copilot's impulse to generate immediate, unverified code. It acts as the executive function, forcing Copilot to ask the MCP for the requirement first, formulate a plan, and wait for human approval.
+3.  **The Hands & Eyes (Polarion MCP):** Reaches out securely to Polarion using a Personal Access Token. It pulls the exact BDD criteria and out-of-scope boundaries so the AI has perfect context without hallucinating.
+4.  **The Workbench (Filesystem/Bash):** Once the human approves the plan, Superpowers locks Copilot into a Test-Driven Development (RED-GREEN-REFACTOR) loop. Copilot uses local terminal commands to write tests and implementation code until verification passes.
+5.  **The Source of Truth (Polarion ALM & GitHub):** Copilot uses the MCP one final time to push test results back into Polarion for compliance tracking, while simultaneously pushing the completed code to GitHub for final human review and deployment.
+
+## 5. Step-by-Step Implementation Plan
+
+### Phase 1: Foundation & Security Setup (Weeks 1-2)
+1.  **Provision Service Accounts:** Create a dedicated user account in Polarion (e.g., `aidlc-agent`). Assign it the Principle of Least Privilege (e.g., read access to Requirements, write access to specific Test Runs).
+2.  **Generate Tokens:** Generate a Personal Access Token (PAT) for the Polarion service account and a standard GitHub Fine-Grained Access Token.
+3.  **Deploy Polarion MCP:** Install the community Polarion MCP server locally for pilot developers or centrally if using cloud-based AI workspaces. Securely bind the `POLARION_URL` and `POLARION_TOKEN` environment variables.
+4.  **Connect Copilot:** Register the MCP server in the Copilot/IDE environment configuration file, exposing the Polarion toolset to the assistant.
+
+### Phase 2: Cognitive Framework Injection (Weeks 2-3)
+1.  **Load Superpowers:** Inject the Superpowers system prompt methodology into the repository's `.cursorrules` or Copilot Custom Instructions.
+2.  **Define Custom Integration Rules:** Add explicit instructions binding the tools together: *“Before writing code, use the Polarion MCP to read the user-provided Work Item ID. Always use Superpowers TDD. When tests pass, use MCP to log results.”*
+3.  **Configure Repository:** Ensure the GitHub repository has the necessary automated testing frameworks (e.g., Jest, PyTest, JUnit) configured so the AI can execute the RED-GREEN-REFACTOR loop.
+
+### Phase 3: Pilot Workflow Execution (Weeks 3-4)
+Execute a pilot sprint using the defined AIDLC workflow:
+1.  **Requirement Approval (Human):** Product Owner approves a Requirement in Polarion.
+2.  **Agent Kickoff (Human/AI):** Developer prompts Copilot: *"Implement Polarion Work Item REQ-104."*
+3.  **Context Gathering (AI):** Copilot uses MCP to pull REQ-104 data and drafts a Superpowers plan.
+4.  **Implementation Gate (Human):** Developer reviews the generated plan in the chat and approves it.
+5.  **Test-Driven Coding (AI):** Copilot writes tests, implements code in a new Git worktree, and debugs until tests pass.
+6.  **Traceability Logging (AI):** Copilot commits to GitHub (with `REQ-104` in the message) and uses MCP to update Polarion.
+
+### Phase 4: Scaling & Continuous Compliance (Month 2+)
+1.  **CI/CD Integration:** Configure GitHub Actions to enforce that every Pull Request contains a valid Polarion Work Item ID before merging.
+2.  **Automated Baselines:** Implement a release script that triggers a Polarion Baseline snapshot upon deployment to production, locking the traceability matrix for auditors.
+3.  **Team Onboarding:** Roll out the custom configuration files and MCP server access to the wider engineering team.
+
+> **Crucial Governance Note: The Human-in-the-Loop (HITL)**
+> The AIDLC does not replace human oversight; it automates the execution. Polarion's Workflow Engine must be configured so that AI agents cannot transition a Work Item out of a "Review" state. A human Engineering Manager or QA Lead must still apply an Electronic Signature to finalize Pull Requests and Polarion Test Runs.
